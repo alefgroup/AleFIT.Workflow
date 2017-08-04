@@ -1,28 +1,57 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
-using AleFIT.Workflow.Builders;
-using AleFIT.Workflow.Nodes;
+using AleFIT.Workflow.Core;
+using AleFIT.Workflow.Model;
 
 namespace AleFIT.Workflow
 {
     public class Workflow<T> : IWorkflow<T>
     {
-        private readonly IList<Func<ExecutionContext<T>, Task>> _workflowNodes;
+        private readonly WorkflowConfiguration _configuration;
+        private readonly IList<Func<ExecutionContext<T>, Task<ExecutionContext<T>>>> _workflowNodes;
 
-        internal Workflow(IEnumerable<Func<ExecutionContext<T>, Task>> workflowNodes)
+        internal Workflow(IEnumerable<Func<ExecutionContext<T>, Task<ExecutionContext<T>>>> workflowNodes, WorkflowConfiguration configuration)
         {
-            _workflowNodes = new List<Func<ExecutionContext<T>, Task>>(workflowNodes);
+            if (workflowNodes == null) throw new ArgumentNullException(nameof(workflowNodes));
+
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _workflowNodes = new List<Func<ExecutionContext<T>, Task<ExecutionContext<T>>>>(workflowNodes);
         }
         
-        async Task IExecutable<T>.ExecuteAsync(T data)
+        public async Task<ExecutionContext<T>> ExecuteAsync(T data)
         {
             var context = new ExecutionContext<T>(data);
             foreach (var workflowNode in _workflowNodes)
             {
-                await workflowNode(context).ConfigureAwait(false);
+                try
+                {
+                    context = await workflowNode(context).ConfigureAwait(false);
+                }
+                catch(Exception exception)
+                {
+                    if(_configuration.ContinueOnError)
+                    {
+                        context.Exception = exception;
+                    }
+                    else
+                    {
+                        context.SetFaulted(exception);
+                        break;
+                    }
+                }
             }
+            return context;
+        }
+
+        async Task<ExecutionContext<T>> IExecutable<ExecutionContext<T>>.ExecuteAsync(ExecutionContext<T> data)
+        {
+            ExecutionContext<T> context = data;
+            foreach (var workflowNode in _workflowNodes)
+            {
+                context = await workflowNode(context).ConfigureAwait(false);
+            }
+            return context;
         }
     }
 }

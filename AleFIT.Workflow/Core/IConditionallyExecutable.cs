@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace AleFIT.Workflow
+namespace AleFIT.Workflow.Core
 {
-    public interface IConditionallyExecutable<in T> : IExecutable<T>
+    public interface IConditionallyExecutable<T> : IExecutable<T>
     {
         Task<bool> ShouldExecuteAsync(T data);
     }

@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace AleFIT.Workflow
+namespace AleFIT.Workflow.Model
 {
     public class ExecutionContext<T>
     {
@@ -17,5 +15,11 @@ namespace AleFIT.Workflow
         public Exception Exception { get; internal set; }
 
         public bool Successful { get; internal set; }
+
+        internal void SetFaulted(Exception exception)
+        {
+            Exception = exception;
+            Successful = false;
+        }
     }
 }

@@ -1,7 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using AleFIT.Workflow.Builders;
+using AleFIT.Workflow.Core;
+using AleFIT.Workflow.Model;
+using AleFIT.Workflow.Nodes;
 
 namespace AleFIT.Workflow
 {
@@ -9,17 +10,86 @@ namespace AleFIT.Workflow
     {
         public async Task Process()
         {
-            var workflow = WorkflowBuilder<Data>.Create()
-                .Do(context =>
+            var builder = WorkflowBuilder<Data>.Create(config =>
                 {
-                    context.Data.Id = 3;
-                    return Task.FromResult(0);
-                })
-                .If(context => Task.FromResult(true), context => Task.FromResult(0), context => Task.FromResult(0))
-                .Do(context => Task.FromResult(0))
+                    config.ContinueOnError = true;
+                });
+
+            var workflow = builder
+                .Do(new Validator())
+                .Do(new SaveToDatabase())
+                .Do(new SendToIse())
+                .If(new SuccessEvaluator(), //if
+                        new ReportSuccess(), //when true
+                        new ReportFailure()) //when false
+                .If(context => Task.FromResult(true), WorkflowBuilder<Data>.Create()
+                        .Do(Task.FromResult)
+                        .Do(Task.FromResult)
+                        .Do(Task.FromResult)
+                    .Build(), WorkflowBuilder<Data>.Create()
+                        .Do(Task.FromResult)
+                        .Do(Task.FromResult)
+                        .Do(Task.FromResult)
+                    .Build())
                 .Build();
 
-            await workflow.ExecuteAsync(new Data { Id = 1, Name = "Franta", Ip = "10.0.0.1" });
+            var result = await workflow.ExecuteAsync(new Data());
+        }
+    }
+
+    public class Validator : IExecutable<ExecutionContext<Data>>
+    {
+        public Task<ExecutionContext<Data>> ExecuteAsync(ExecutionContext<Data> data)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
+    public class SaveToDatabase : IExecutable<ExecutionContext<Data>>
+    {
+        public Task<ExecutionContext<Data>> ExecuteAsync(ExecutionContext<Data> data)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+    
+    public class SendToIse : IExecutable<ExecutionContext<Data>>
+    {
+        public Task<ExecutionContext<Data>> ExecuteAsync(ExecutionContext<Data> data)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
+    public class Rollback : IExecutable<ExecutionContext<Data>>
+    {
+        public Task<ExecutionContext<Data>> ExecuteAsync(ExecutionContext<Data> data)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
+    public class SuccessEvaluator : ICondition<ExecutionContext<Data>>
+    {
+        public Task<bool> Evaluate(ExecutionContext<Data> context)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
+    public class ReportSuccess : IExecutable<ExecutionContext<Data>>
+    {
+        public Task<ExecutionContext<Data>> ExecuteAsync(ExecutionContext<Data> data)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
+    public class ReportFailure : IExecutable<ExecutionContext<Data>>
+    {
+        public Task<ExecutionContext<Data>> ExecuteAsync(ExecutionContext<Data> data)
+        {
+            throw new System.NotImplementedException();
         }
     }
 

@@ -1,9 +1,11 @@
 ﻿using System.Threading.Tasks;
-using AleFIT.Workflow.Nodes;
+using AleFIT.Workflow.Core;
+using AleFIT.Workflow.Model;
 
 namespace AleFIT.Workflow
 {
-    public interface IWorkflow<in T> : IExecutable<T>
+    public interface IWorkflow<T> : IExecutable<ExecutionContext<T>>
     {
+        Task<ExecutionContext<T>> ExecuteAsync(T data);
     }
 }

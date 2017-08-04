@@ -1,9 +1,8 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using AleFIT.Workflow.Core;
 
 namespace AleFIT.Workflow.Nodes
 {
-    internal interface IConditionalWorkflowNode<in T> : IExecutable<T>
+    internal interface IConditionalWorkflowNode<T> : IExecutable<T>
     {
 
     }
