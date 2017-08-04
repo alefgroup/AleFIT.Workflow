@@ -22,15 +22,26 @@ namespace AleFIT.Workflow
         public async Task<ExecutionContext<T>> ExecuteAsync(T data)
         {
             var context = new ExecutionContext<T>(data);
+            return await ExecuteInternalAsync(context);
+        }
+
+        async Task<ExecutionContext<T>> IExecutable<ExecutionContext<T>>.ExecuteAsync(ExecutionContext<T> data)
+        {
+            return await ExecuteInternalAsync(data);
+        }
+
+        private async Task<ExecutionContext<T>> ExecuteInternalAsync(ExecutionContext<T> data)
+        {
+            ExecutionContext<T> context = data;
             foreach (var workflowNode in _workflowNodes)
             {
                 try
                 {
                     context = await workflowNode(context).ConfigureAwait(false);
                 }
-                catch(Exception exception)
+                catch (Exception exception)
                 {
-                    if(_configuration.ContinueOnError)
+                    if (_configuration.ContinueOnError)
                     {
                         context.Exception = exception;
                     }
@@ -40,16 +51,10 @@ namespace AleFIT.Workflow
                         break;
                     }
                 }
-            }
-            return context;
-        }
-
-        async Task<ExecutionContext<T>> IExecutable<ExecutionContext<T>>.ExecuteAsync(ExecutionContext<T> data)
-        {
-            ExecutionContext<T> context = data;
-            foreach (var workflowNode in _workflowNodes)
-            {
-                context = await workflowNode(context).ConfigureAwait(false);
+                finally
+                {
+                    context.ProcessedNodes++;
+                }
             }
             return context;
         }

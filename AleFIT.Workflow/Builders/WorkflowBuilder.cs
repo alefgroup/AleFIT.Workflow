@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AleFIT.Workflow.Builders.Interfaces;
 using AleFIT.Workflow.Core;
 using AleFIT.Workflow.Model;
 using AleFIT.Workflow.Nodes;
@@ -19,12 +20,12 @@ namespace AleFIT.Workflow.Builders
             _configuration = configuration;
         }
 
-        public static IWorkflowBuilder<T> Create()
+        public static IWorkflowBuilder<T> CreateEmpty()
         {
             return new WorkflowBuilder<T>(WorkflowConfiguration.CreateDefault());
         }
 
-        public static IWorkflowBuilder<T> Create(Action<WorkflowConfiguration> configureAction)
+        public static IWorkflowBuilder<T> CreateEmpty(Action<WorkflowConfiguration> configureAction)
         {
             if (configureAction == null) throw new ArgumentNullException(nameof(configureAction));
 

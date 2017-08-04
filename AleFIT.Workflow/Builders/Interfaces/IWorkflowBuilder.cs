@@ -4,7 +4,7 @@ using AleFIT.Workflow.Core;
 using AleFIT.Workflow.Model;
 using AleFIT.Workflow.Nodes;
 
-namespace AleFIT.Workflow.Builders
+namespace AleFIT.Workflow.Builders.Interfaces
 {
     public interface IWorkflowBuilder<T>
     {

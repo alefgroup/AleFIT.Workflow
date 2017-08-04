@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace AleFIT.Workflow.Builders
+namespace AleFIT.Workflow.Builders.Interfaces
 {
     internal interface IEmptyConditionalNodeBuilder<T>
     {

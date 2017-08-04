@@ -10,7 +10,7 @@ namespace AleFIT.Workflow
     {
         public async Task Process()
         {
-            var builder = WorkflowBuilder<Data>.Create(config =>
+            var builder = WorkflowBuilder<Data>.CreateEmpty(config =>
                 {
                     config.ContinueOnError = true;
                 });
@@ -22,16 +22,18 @@ namespace AleFIT.Workflow
                 .If(new SuccessEvaluator(), //if
                         new ReportSuccess(), //when true
                         new ReportFailure()) //when false
-                .If(context => Task.FromResult(true), WorkflowBuilder<Data>.Create()
+                .If(context => Task.FromResult(true), WorkflowBuilder<Data>.CreateEmpty()
                         .Do(Task.FromResult)
                         .Do(Task.FromResult)
                         .Do(Task.FromResult)
-                    .Build(), WorkflowBuilder<Data>.Create()
+                    .Build(), WorkflowBuilder<Data>.CreateEmpty()
                         .Do(Task.FromResult)
                         .Do(Task.FromResult)
                         .Do(Task.FromResult)
                     .Build())
                 .Build();
+
+            var workflow2 = builder.Build();
 
             var result = await workflow.ExecuteAsync(new Data());
         }

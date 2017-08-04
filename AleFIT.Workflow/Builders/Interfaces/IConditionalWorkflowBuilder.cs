@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using AleFIT.Workflow.Core;
 using AleFIT.Workflow.Model;
 
-namespace AleFIT.Workflow.Builders
+namespace AleFIT.Workflow.Builders.Interfaces
 {
     public interface IConditionalWorkflowBuilder<T>
     {

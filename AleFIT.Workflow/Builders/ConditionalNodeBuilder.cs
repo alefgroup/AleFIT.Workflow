@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AleFIT.Workflow.Builders.Interfaces;
 using AleFIT.Workflow.Core;
 using AleFIT.Workflow.Nodes;
 
