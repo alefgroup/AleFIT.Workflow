@@ -8,10 +8,10 @@ namespace AleFIT.Workflow.Nodes
 {
     internal class ConditionalWorkflowNode<T> : IConditionalWorkflowNode<T>
     {
-        private readonly IEnumerable<(Func<T, Task<bool>> condition, Func<T, Task> executeIfTrue)> _conditionalExecutions;
+        private readonly IEnumerable<IConditionallyExecutable<T>> _conditionalExecutions;
         private readonly Func<T, Task> _elseAction;
 
-        public ConditionalWorkflowNode(IEnumerable<(Func<T, Task<bool>> condition, Func<T, Task> executeIfTrue)> conditionalExecutions, Func<T, Task> elseAction)
+        public ConditionalWorkflowNode(IEnumerable<IConditionallyExecutable<T>> conditionalExecutions, Func<T, Task> elseAction)
         {
             _conditionalExecutions = conditionalExecutions ?? throw new ArgumentNullException(nameof(conditionalExecutions));
             _elseAction = elseAction ?? throw new ArgumentNullException(nameof(elseAction));
@@ -21,9 +21,9 @@ namespace AleFIT.Workflow.Nodes
         {
             foreach (var conditionalExecution in _conditionalExecutions)
             {
-                if (await conditionalExecution.condition(data))
+                if (await conditionalExecution.ShouldExecuteAsync(data))
                 {
-                    await conditionalExecution.executeIfTrue(data);
+                    await conditionalExecution.ExecuteAsync(data);
                     return;
                 }
             }

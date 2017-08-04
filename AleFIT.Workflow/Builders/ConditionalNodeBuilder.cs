@@ -8,9 +8,7 @@ namespace AleFIT.Workflow.Builders
 {
     internal class ConditionalNodeBuilder<T> : IFullConditionalNodeBuilder<T>
     {
-        private readonly Queue<(Func<T, Task<bool>> condition, Func<T, Task> executeIfTrue)> _conditionalExecutions =
-            new Queue<ValueTuple<Func<T, Task<bool>>, Func<T, Task>>>();
-
+        private readonly Queue<IConditionallyExecutable<T>> _conditionalExecutions = new Queue<IConditionallyExecutable<T>>();
         private Func<T, Task<bool>> _condition;
         
         public ConditionalNodeBuilder(Func<T, Task<bool>> condition)
@@ -23,7 +21,7 @@ namespace AleFIT.Workflow.Builders
             if (condition == null) throw new ArgumentNullException(nameof(condition));
             if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
 
-            _conditionalExecutions.Enqueue(new ValueTuple<Func<T, Task<bool>>, Func<T, Task>>(condition, actionIfTrue));
+            _conditionalExecutions.Enqueue(new ConditionallyExecutable<T>(condition, actionIfTrue));
         }
 
         public static IFullConditionalNodeBuilder<T> Create(Func<T, Task<bool>> condition, Func<T, Task> actionIfTrue)
@@ -38,7 +36,7 @@ namespace AleFIT.Workflow.Builders
         
         public IFullConditionalNodeBuilder<T> ElseIf(Func<T, Task<bool>> condition, Func<T, Task> actionIfTrue)
         {
-            _conditionalExecutions.Enqueue(new ValueTuple<Func<T, Task<bool>>, Func<T, Task>>(condition, actionIfTrue));
+            _conditionalExecutions.Enqueue(new ConditionallyExecutable<T>(condition, actionIfTrue));
             return this;
         }
 

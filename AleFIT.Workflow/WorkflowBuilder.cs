@@ -9,9 +9,8 @@ namespace AleFIT.Workflow
 {
     public class WorkflowBuilder<T> : IWorkflowBuilder<T>, IConditionalWorkflowBuilder<T>
     {
-        private readonly IList<Func<T, Task>> _workflowNodes = new List<Func<T, Task>>();
-        private IFullConditionalNodeBuilder<T> _fullConditionalBuilder;
-        private IEmptyConditionalNodeBuilder<T> _emptyConditionalBuilder;
+        private readonly IList<Func<ExecutionContext<T>, Task>> _workflowNodes = new List<Func<ExecutionContext<T>, Task>>();
+        private IFullConditionalNodeBuilder<ExecutionContext<T>> _fullConditionalBuilder;
 
         private WorkflowBuilder() { }
 
@@ -20,82 +19,67 @@ namespace AleFIT.Workflow
             return new WorkflowBuilder<T>();
         }
 
-        public IWorkflowBuilder<T> Do(IExecutable<T> node)
+        public IWorkflowBuilder<T> Do(IExecutable<ExecutionContext<T>> node)
         {
-            _workflowNodes.Add(node.ExecuteAsync);
-            return this;
+            return Do(node.ExecuteAsync);
         }
 
-        public IWorkflowBuilder<T> Do(Func<T, Task> actionToExecute)
+        public IWorkflowBuilder<T> Do(Func<ExecutionContext<T>, Task> actionToExecute)
         {
             _workflowNodes.Add(actionToExecute);
             return this;
         }
 
-        public IConditionalWorkflowBuilder<T> If(Func<T, Task<bool>> condition)
+        public IWorkflowBuilder<T> If(IConditionallyExecutable<ExecutionContext<T>> condition, Func<ExecutionContext<T>, Task> actionIfFalse)
         {
-            _emptyConditionalBuilder = ConditionalNodeBuilder<T>.Create(condition);
+            return If(condition.ShouldExecuteAsync, condition.ExecuteAsync, actionIfFalse);
+        }
+
+        public IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, IWorkflow<ExecutionContext<T>> workflowIfTrue, IWorkflow<ExecutionContext<T>> workflowIfFalse)
+        {
+            return If(condition, workflowIfTrue.ExecuteAsync, workflowIfFalse.ExecuteAsync);
+        }
+
+        public IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, Func<ExecutionContext<T>, Task> actionIfTrue, Func<ExecutionContext<T>, Task> actionIfFalse)
+        {
+            var conditionalNode = ConditionalNodeBuilder<ExecutionContext<T>>
+                .Create(condition, actionIfTrue)
+                .Else(actionIfFalse);
+
+            _workflowNodes.Add(conditionalNode.ExecuteAsync);
             return this;
         }
 
-        public IConditionalWorkflowBuilder<T> If(IConditionallyExecutable<T> node)
+        public IConditionalWorkflowBuilder<T> If(IConditionallyExecutable<ExecutionContext<T>> node)
         {
-            _fullConditionalBuilder = ConditionalNodeBuilder<T>.Create(node.ShouldExecuteAsync, node.ExecuteAsync);
+            return If(node.ShouldExecuteAsync, node.ExecuteAsync);
+        }
+
+        public IConditionalWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, Func<ExecutionContext<T>, Task> actionIfTrue)
+        {
+            _fullConditionalBuilder = ConditionalNodeBuilder<ExecutionContext<T>>.Create(condition, actionIfTrue);
             return this;
         }
 
-        public IConditionalWorkflowBuilder<T> If(Func<T, Task<bool>> condition, Func<T, Task> actionIfTrue)
-        {
-            _fullConditionalBuilder = ConditionalNodeBuilder<T>.Create(condition, actionIfTrue);
-            return this;
-        }
-
-        public IConditionalWorkflowBuilder<T> ElseIf(IConditionallyExecutable<T> node)
+        public IConditionalWorkflowBuilder<T> ElseIf(IConditionallyExecutable<ExecutionContext<T>> node)
         {
             return ElseIf(node.ShouldExecuteAsync, node.ExecuteAsync);
         }
 
-        public IConditionalWorkflowBuilder<T> ElseIf(Func<T, Task<bool>> condition, Func<T, Task> actionIfTrue)
+        public IConditionalWorkflowBuilder<T> ElseIf(Func<ExecutionContext<T>, Task<bool>> condition, Func<ExecutionContext<T>, Task> actionIfTrue)
         {
             _fullConditionalBuilder.ElseIf(condition, actionIfTrue);
             return this;
         }
 
-        public IWorkflowBuilder<T> Else(IExecutable<T> node)
+        public IWorkflowBuilder<T> Else(IExecutable<ExecutionContext<T>> node)
         {
             return Else(node.ExecuteAsync);
         }
 
-        public IWorkflowBuilder<T> Else(Func<T, Task> actionToExecute)
+        public IWorkflowBuilder<T> Else(Func<ExecutionContext<T>, Task> actionToExecute)
         {
             _workflowNodes.Add(_fullConditionalBuilder.Else(actionToExecute).ExecuteAsync);
-            return this;
-        }
-
-        public IWorkflowBuilder<T> If(IConditionallyExecutable<T> condition, Func<T, Task> actionIfFalse)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
-
-            return If(condition.ShouldExecuteAsync, condition.ExecuteAsync, actionIfFalse);
-        }
-
-        public IWorkflowBuilder<T> If(Func<T, Task<bool>> condition, IWorkflow<T> workflowIfTrue, IWorkflow<T> workflowIfFalse)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (workflowIfTrue == null) throw new ArgumentNullException(nameof(workflowIfTrue));
-            if (workflowIfFalse == null) throw new ArgumentNullException(nameof(workflowIfFalse));
-
-            return If(condition, workflowIfTrue.ExecuteAsync, workflowIfFalse.ExecuteAsync);
-        }
-
-        public IWorkflowBuilder<T> If(Func<T, Task<bool>> condition, Func<T, Task> actionIfTrue, Func<T, Task> actionIfFalse)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-            if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
-
-            _workflowNodes.Add(ConditionalNodeBuilder<T>.Create(condition, actionIfTrue).Else(actionIfFalse).ExecuteAsync);
             return this;
         }
 
@@ -103,5 +87,6 @@ namespace AleFIT.Workflow
         {
             return new Workflow<T>(_workflowNodes);
         }
+
     }
 }

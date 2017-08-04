@@ -7,9 +7,10 @@ namespace AleFIT.Workflow.Builders
 {
     public interface IConditionalWorkflowBuilder<T>
     {
-        IConditionalWorkflowBuilder<T> ElseIf(IConditionallyExecutable<T> node);
-        IConditionalWorkflowBuilder<T> ElseIf(Func<T, Task<bool>> condition, Func<T, Task> actionIfTrue);
-        IWorkflowBuilder<T> Else(IExecutable<T> node);
-        IWorkflowBuilder<T> Else(Func<T, Task> actionToExecute);
+        IConditionalWorkflowBuilder<T> ElseIf(IConditionallyExecutable<ExecutionContext<T>> node);
+        IConditionalWorkflowBuilder<T> ElseIf(Func<ExecutionContext<T>, Task<bool>> condition,
+            Func<ExecutionContext<T>, Task> actionIfTrue);
+        IWorkflowBuilder<T> Else(IExecutable<ExecutionContext<T>> node);
+        IWorkflowBuilder<T> Else(Func<ExecutionContext<T>, Task> actionToExecute);
     }
 }
