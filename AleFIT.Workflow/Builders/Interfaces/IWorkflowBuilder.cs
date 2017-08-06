@@ -1,44 +1,34 @@
 ﻿using System;
 using System.Threading.Tasks;
+
 using AleFIT.Workflow.Core;
-using AleFIT.Workflow.Model;
-using AleFIT.Workflow.Nodes;
 
 namespace AleFIT.Workflow.Builders.Interfaces
 {
     public interface IWorkflowBuilder<T>
     {
-        IWorkflowBuilder<T> Do(IExecutable<ExecutionContext<T>> node);
+        IWorkflowBuilder<T> Do(IExecutable<T> action);
 
-        IWorkflowBuilder<T> Do(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionToExecute);
-        
-        IConditionalWorkflowBuilder<T> If(IConditionallyExecutable<ExecutionContext<T>> node);
+        IWorkflowBuilder<T> Do(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> action);
 
-        IConditionalWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, 
+        IConditionalWorkflowBuilder<T> If(IConditional<T> condition, IExecutable<T> actionIfTrue);
+
+        IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, IExecutable<T> actionIfTrue, IExecutable<T> actionIfFalse);
+
+        IWorkflowBuilder<T> If(IConditional<T> condition, IExecutable<T> actionIfTrue, IExecutable<T> actionIfFalse);
+
+        IConditionalWorkflowBuilder<T> If(
+            IConditional<T> condition,
             Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue);
 
-        IWorkflowBuilder<T> If(IConditionallyExecutable<ExecutionContext<T>> condition, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfFalse);
+        IConditionalWorkflowBuilder<T> If(
+            Func<ExecutionContext<T>, Task<bool>> condition,
+            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue);
 
-        IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfFalse);
+        IConditionalWorkflowBuilder<T> If(
+            Func<ExecutionContext<T>, Task<bool>> condition,
+            IExecutable<T> actionIfTrue);
 
-        IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition,
-            IExecutable<ExecutionContext<T>> actionIfTrue,
-            IExecutable<ExecutionContext<T>> actionIfFalse);
-
-        IWorkflowBuilder<T> If(ICondition<ExecutionContext<T>> condition,
-            IExecutable<ExecutionContext<T>> actionIfTrue,
-            IExecutable<ExecutionContext<T>> actionIfFalse);
-
-        IWorkflowBuilder<T> If(IConditionallyExecutable<ExecutionContext<T>> trueBranch,
-            IExecutable<ExecutionContext<T>> elseBranch);
-
-        IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, 
-            IWorkflow<T> workflowIfTrue,
-            IWorkflow<T> workflowIfFalse);
-        
         IWorkflow<T> Build();
     }
 }

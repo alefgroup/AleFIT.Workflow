@@ -4,6 +4,6 @@ namespace AleFIT.Workflow.Core
 {
     public interface IExecutable<T>
     {
-        Task<T> ExecuteAsync(T data);
+        Task<ExecutionContext<T>> ExecuteAsync(ExecutionContext<T> context);
     }
 }

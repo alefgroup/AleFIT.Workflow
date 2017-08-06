@@ -1,10 +1,13 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+
 using AleFIT.Workflow.Core;
-using AleFIT.Workflow.Model;
 
 namespace AleFIT.Workflow
 {
-    public interface IWorkflow<T> : IExecutable<ExecutionContext<T>>
+    public interface IWorkflow<T> : IExecutable<T>
     {
         Task<ExecutionContext<T>> ExecuteAsync(T data);
     }

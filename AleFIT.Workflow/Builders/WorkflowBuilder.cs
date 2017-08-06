@@ -1,161 +1,176 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+
 using AleFIT.Workflow.Builders.Interfaces;
 using AleFIT.Workflow.Core;
-using AleFIT.Workflow.Model;
+using AleFIT.Workflow.Core.Configuration;
+using AleFIT.Workflow.Executors;
 using AleFIT.Workflow.Nodes;
 
 namespace AleFIT.Workflow.Builders
 {
     public class WorkflowBuilder<T> : IWorkflowBuilder<T>, IConditionalWorkflowBuilder<T>
     {
-        private readonly IList<Func<ExecutionContext<T>, Task<ExecutionContext<T>>>> _workflowNodes = 
-            new List<Func<ExecutionContext<T>, Task<ExecutionContext<T>>>>();
-        private IFullConditionalNodeBuilder<ExecutionContext<T>> _fullConditionalBuilder;
-        private readonly WorkflowConfiguration _configuration;
+        private readonly Queue<IExecutable<T>> _nodes = new Queue<IExecutable<T>>();
+        private readonly IExecutionProcessor<T> _executionProcessor = new SequentialExecutionProcessor<T>();
+        private readonly IWorkflowConfiguration _configuration;
 
-        private WorkflowBuilder(WorkflowConfiguration configuration)
+        private IWithIfNodeBuilder<T> _ifElseNodeBuilder;
+
+        private WorkflowBuilder(IWorkflowConfiguration configuration)
         {
             _configuration = configuration;
         }
 
-        public static IWorkflowBuilder<T> CreateEmpty()
-        {
-            return new WorkflowBuilder<T>(WorkflowConfiguration.CreateDefault());
-        }
+        public static IWorkflowBuilder<T> Create() => new WorkflowBuilder<T>(WorkflowConfiguration.CreateDefault());
 
-        public static IWorkflowBuilder<T> CreateEmpty(Action<WorkflowConfiguration> configureAction)
+        public static IWorkflowBuilder<T> Create(Action<IMutableWorkflowConfiguration> configureAction)
         {
-            if (configureAction == null) throw new ArgumentNullException(nameof(configureAction));
-
             var configuration = WorkflowConfiguration.CreateDefault();
+
             configureAction(configuration);
 
-            //clone the configuration to ensure no more changes can be propagated into it
-            return new WorkflowBuilder<T>(configuration.Clone());
-        }
-        
-        public IWorkflowBuilder<T> Do(IExecutable<ExecutionContext<T>> node)
-        {
-            if (node == null) throw new ArgumentNullException(nameof(node));
-
-            return Do(node.ExecuteAsync);
+            return new WorkflowBuilder<T>(configuration);
         }
 
-        public IWorkflowBuilder<T> Do(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionToExecute)
+        public IWorkflowBuilder<T> Do(IExecutable<T> action)
         {
-            if (actionToExecute == null) throw new ArgumentNullException(nameof(actionToExecute));
+            if (action == null) throw new ArgumentNullException(nameof(action));
 
-            _workflowNodes.Add(actionToExecute);
+            _nodes.Enqueue(action);
             return this;
         }
 
-        public IWorkflowBuilder<T> If(IConditionallyExecutable<ExecutionContext<T>> condition, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfFalse)
+        public IWorkflowBuilder<T> Do(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> action)
         {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
+            if (action == null) throw new ArgumentNullException(nameof(action));
 
-            return If(condition.ShouldExecuteAsync, condition.ExecuteAsync, actionIfFalse);
+            return Do(new ExecutableNode<T>(action));
         }
 
-        public IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, 
-            IExecutable<ExecutionContext<T>> actionIfTrue, 
-            IExecutable<ExecutionContext<T>> actionIfFalse)
+        public IConditionalWorkflowBuilder<T> If(IConditional<T> condition, IExecutable<T> actionIfTrue)
         {
             if (condition == null) throw new ArgumentNullException(nameof(condition));
             if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-            if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
 
-            return If(condition, actionIfTrue.ExecuteAsync, actionIfFalse.ExecuteAsync);
-        }
+            _ifElseNodeBuilder = IfElseNodeBuilder<T>.CreateUsingProcessor(_executionProcessor)
+                .WithIf(condition, Enumerable.Repeat(actionIfTrue, 1));
 
-        public IWorkflowBuilder<T> If(ICondition<ExecutionContext<T>> condition, 
-            IExecutable<ExecutionContext<T>> actionIfTrue, 
-            IExecutable<ExecutionContext<T>> actionIfFalse)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-            if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
-
-            return If(condition.Evaluate, actionIfTrue.ExecuteAsync, actionIfFalse.ExecuteAsync);
-        }
-
-        public IWorkflowBuilder<T> If(IConditionallyExecutable<ExecutionContext<T>> trueBranch, IExecutable<ExecutionContext<T>> elseBranch)
-        {
-            if (trueBranch == null) throw new ArgumentNullException(nameof(trueBranch));
-            if (elseBranch == null) throw new ArgumentNullException(nameof(elseBranch));
-
-            return If(trueBranch.ShouldExecuteAsync, trueBranch.ExecuteAsync, elseBranch.ExecuteAsync);
-        }
-
-        public IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, 
-            IWorkflow<T> workflowIfTrue,
-            IWorkflow<T> workflowIfFalse)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (workflowIfTrue == null) throw new ArgumentNullException(nameof(workflowIfTrue));
-            if (workflowIfFalse == null) throw new ArgumentNullException(nameof(workflowIfFalse));
-
-            return If(condition, workflowIfTrue.ExecuteAsync, workflowIfFalse.ExecuteAsync);
-        }
-
-        public IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfFalse)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-            if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
-
-            var conditionalNode = ConditionalNodeBuilder<ExecutionContext<T>>
-                .Create(condition, actionIfTrue)
-                .Else(actionIfFalse);
-
-            _workflowNodes.Add(conditionalNode.ExecuteAsync);
             return this;
         }
 
-        public IConditionalWorkflowBuilder<T> If(IConditionallyExecutable<ExecutionContext<T>> node)
+        public IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, IExecutable<T> actionIfTrue, IExecutable<T> actionIfFalse)
         {
-            return If(node.ShouldExecuteAsync, node.ExecuteAsync);
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+            if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
+
+            return If(new ConditionalNode<T>(condition), actionIfTrue, actionIfFalse);
         }
 
-        public IConditionalWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, 
+        public IWorkflowBuilder<T> If(IConditional<T> condition, IExecutable<T> actionIfTrue, IExecutable<T> actionIfFalse)
+        {
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+            if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
+
+            _nodes.Enqueue(IfElseNodeBuilder<T>
+                .CreateUsingProcessor(_executionProcessor)
+                .WithIf(condition, Enumerable.Repeat(actionIfTrue, 1))
+                .Else(Enumerable.Repeat(actionIfFalse, 1)));
+
+            return this;
+        }
+
+        public IConditionalWorkflowBuilder<T> If(IConditional<T> condition, Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
+        {
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+
+            return If(condition, new ExecutableNode<T>(actionIfTrue));
+        }
+
+        public IConditionalWorkflowBuilder<T> If(
+            Func<ExecutionContext<T>, Task<bool>> condition, 
             Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
         {
-            _fullConditionalBuilder = ConditionalNodeBuilder<ExecutionContext<T>>.Create(condition, actionIfTrue);
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+
+            return If(new ConditionalNode<T>(condition), new ExecutableNode<T>(actionIfTrue));
+        }
+
+        public IConditionalWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, IExecutable<T> actionIfTrue)
+        {
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+
+            return If(new ConditionalNode<T>(condition), actionIfTrue);
+        }
+
+        public IConditionalWorkflowBuilder<T> ElseIf(IConditional<T> condition, IExecutable<T> actionIfTrue)
+        {
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+
+            _ifElseNodeBuilder.ElseIf(condition, actionIfTrue);
+
             return this;
         }
 
-        public IConditionalWorkflowBuilder<T> ElseIf(IConditionallyExecutable<ExecutionContext<T>> node)
+        public IConditionalWorkflowBuilder<T> ElseIf(IConditional<T> condition, Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
         {
-            return ElseIf(node.ShouldExecuteAsync, node.ExecuteAsync);
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+
+            return ElseIf(condition, new ExecutableNode<T>(actionIfTrue));
         }
 
-        public IConditionalWorkflowBuilder<T> ElseIf(Func<ExecutionContext<T>, Task<bool>> condition, 
+        public IConditionalWorkflowBuilder<T> ElseIf(
+            Func<ExecutionContext<T>, Task<bool>> condition, 
             Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
         {
-            _fullConditionalBuilder.ElseIf(condition, actionIfTrue);
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+
+            return ElseIf(new ConditionalNode<T>(condition), new ExecutableNode<T>(actionIfTrue));
+        }
+
+        public IWorkflowBuilder<T> Else(IExecutable<T> elseAction)
+        {
+            if (elseAction == null) throw new ArgumentNullException(nameof(elseAction));
+
+            return Else(Enumerable.Repeat(elseAction, 1));
+        }
+
+        public IWorkflowBuilder<T> Else(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> elseAction)
+        {
+            if (elseAction == null) throw new ArgumentNullException(nameof(elseAction));
+
+            return Else(new ExecutableNode<T>(elseAction));
+        }
+
+        public IWorkflowBuilder<T> Else(IEnumerable<IExecutable<T>> elseActions)
+        {
+            if (elseActions == null) throw new ArgumentNullException(nameof(elseActions));
+
+            _nodes.Enqueue(_ifElseNodeBuilder.Else(elseActions));
+
             return this;
         }
 
-        public IWorkflowBuilder<T> Else(IExecutable<ExecutionContext<T>> node)
+        public IWorkflowBuilder<T> Else(IEnumerable<Func<ExecutionContext<T>, Task<ExecutionContext<T>>>> elseActions)
         {
-            return Else(node.ExecuteAsync);
-        }
+            if (elseActions == null) throw new ArgumentNullException(nameof(elseActions));
 
-        public IWorkflowBuilder<T> Else(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionToExecute)
-        {
-            _workflowNodes.Add(_fullConditionalBuilder.Else(actionToExecute).ExecuteAsync);
-            return this;
+            return Else(elseActions.Select(action => new ExecutableNode<T>(action)));
         }
 
         public IWorkflow<T> Build()
         {
-            return new Workflow<T>(_workflowNodes, _configuration);
+            return new Workflow<T>(_executionProcessor, _configuration, _nodes);
         }
-
     }
 }

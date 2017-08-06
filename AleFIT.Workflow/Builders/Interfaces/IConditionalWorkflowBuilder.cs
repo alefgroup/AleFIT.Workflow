@@ -1,19 +1,29 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+
 using AleFIT.Workflow.Core;
-using AleFIT.Workflow.Model;
 
 namespace AleFIT.Workflow.Builders.Interfaces
 {
     public interface IConditionalWorkflowBuilder<T>
     {
-        IConditionalWorkflowBuilder<T> ElseIf(IConditionallyExecutable<ExecutionContext<T>> node);
+        IConditionalWorkflowBuilder<T> ElseIf(IConditional<T> condition, IExecutable<T> actionIfTrue);
 
-        IConditionalWorkflowBuilder<T> ElseIf(Func<ExecutionContext<T>, Task<bool>> condition,
+        IConditionalWorkflowBuilder<T> ElseIf(
+            IConditional<T> condition, 
             Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue);
 
-        IWorkflowBuilder<T> Else(IExecutable<ExecutionContext<T>> node);
+        IConditionalWorkflowBuilder<T> ElseIf(
+            Func<ExecutionContext<T>, Task<bool>> condition, 
+            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue);
 
-        IWorkflowBuilder<T> Else(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionToExecute);
+        IWorkflowBuilder<T> Else(IExecutable<T> elseAction);
+
+        IWorkflowBuilder<T> Else(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> elseAction);
+
+        IWorkflowBuilder<T> Else(IEnumerable<IExecutable<T>> elseActions);
+
+        IWorkflowBuilder<T> Else(IEnumerable<Func<ExecutionContext<T>, Task<ExecutionContext<T>>>> elseActions);
     }
 }
