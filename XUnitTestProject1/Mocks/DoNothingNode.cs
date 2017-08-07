@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using System.Threading.Tasks;
 using AleFIT.Workflow.Core;
 
-namespace AleFIT.Workflow.Test.TestData
+namespace AleFIT.Workflow.Test.Mocks
 {
     public class DoNothingNode<T> : IExecutable<T>
     {
