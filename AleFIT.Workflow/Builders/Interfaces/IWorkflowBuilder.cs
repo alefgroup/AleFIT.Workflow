@@ -29,6 +29,8 @@ namespace AleFIT.Workflow.Builders.Interfaces
             Func<ExecutionContext<T>, Task<bool>> condition,
             IExecutable<T> actionIfTrue);
 
+        IWorkflowBuilder<T> Pause();
+
         IWorkflow<T> Build();
     }
 }

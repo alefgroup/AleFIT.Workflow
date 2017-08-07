@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 
 using AleFIT.Workflow.Builders;
+using AleFIT.Workflow.Test.Mocks;
 using AleFIT.Workflow.Test.TestData;
 
 using Xunit;
@@ -69,9 +70,11 @@ namespace AleFIT.Workflow.Test
         public async Task NestedIfNodes_ProduceValidWorkflow()
         {
             var workflow = WorkflowBuilder<GenericContext<int>>.Create()
-                .If(context => Task.FromResult(true), WorkflowBuilder<GenericContext<int>>.Create()
-                    .If(context => Task.FromResult(true),
-                        new DoNothingNode<GenericContext<int>>(),
+                .If(
+                    context => Task.FromResult(true),
+                    WorkflowBuilder<GenericContext<int>>.Create().If(
+                            context => Task.FromResult(true),
+                            new DoNothingNode<GenericContext<int>>(),
                         new DoNothingNode<GenericContext<int>>())
                     .Build(),
                     new DoNothingNode<GenericContext<int>>())
@@ -123,6 +126,18 @@ namespace AleFIT.Workflow.Test
 
             Assert.Equal(0, result.Data.SampleData);
             Assert.Equal(11, result.ProcessedActions);
+        }
+
+        [Fact]
+        public async Task SinglePauseNode_ProduceValidWorkflow()
+        {
+            var workflow = WorkflowBuilder<GenericContext<int>>.Create()
+                .Pause()
+                .Build();
+
+            var result = await workflow.ExecuteAsync(new GenericContext<int>(0));
+
+            result.Continue();
         }
     }
 }

@@ -110,6 +110,12 @@ namespace AleFIT.Workflow.Builders
             return If(new ConditionalNode<T>(condition), actionIfTrue);
         }
 
+        public IWorkflowBuilder<T> Pause()
+        {
+            _nodes.Enqueue(new PauseWorkflowNode<T>());
+            return this;
+        }
+
         public IConditionalWorkflowBuilder<T> ElseIf(IConditional<T> condition, IExecutable<T> actionIfTrue)
         {
             if (condition == null) throw new ArgumentNullException(nameof(condition));
