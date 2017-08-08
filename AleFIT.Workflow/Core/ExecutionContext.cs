@@ -24,8 +24,6 @@ namespace AleFIT.Workflow.Core
 
         public int ProcessedActions { get; set; }
 
-        public ExecutionState State { get; internal set; }
-
         public Exception Exception { get; set; }
 
         public ExecutionState State { get; private set; }
@@ -44,10 +42,21 @@ namespace AleFIT.Workflow.Core
             }
         }
 
-        internal void SetPause(TaskCompletionSource<ExecutionContext<T>> completionSource)
+        internal void SetPaused(TaskCompletionSource<ExecutionContext<T>> completionSource)
         {
             State = ExecutionState.Paused;
             _pauseCompletionSources.Enqueue(completionSource);
+        }
+
+        internal void SetCompleted()
+        {
+            State = ExecutionState.Completed;
+        }
+
+        internal void SetFailed(Exception exception = null)
+        {
+            Exception = exception;
+            State = ExecutionState.Failed;
         }
     }
 }

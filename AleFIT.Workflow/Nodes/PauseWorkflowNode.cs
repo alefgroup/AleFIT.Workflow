@@ -12,10 +12,10 @@ namespace AleFIT.Workflow.Nodes
         private readonly TaskCompletionSource<ExecutionContext<T>> _completionSource =
             new TaskCompletionSource<ExecutionContext<T>>();
 
-        public async Task<ExecutionContext<T>> ExecuteAsync(ExecutionContext<T> context)
+        public Task<ExecutionContext<T>> ExecuteAsync(ExecutionContext<T> context)
         {
-            context.SetPause(_completionSource);
-            return await _completionSource.Task;
+            context.SetPaused(_completionSource);
+            return Task.FromResult(context);
         }
     }
 }

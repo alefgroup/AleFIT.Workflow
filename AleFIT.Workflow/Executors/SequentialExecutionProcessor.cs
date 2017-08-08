@@ -8,23 +8,6 @@ namespace AleFIT.Workflow.Executors
 {
     internal class SequentialExecutionProcessor<T> : IExecutionProcessor<T>
     {
-        public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IExecutable<T> executable)
-        {
-            try
-            {
-                return await executable.ExecuteAsync(context).ConfigureAwait(false);
-            }
-            catch (Exception exception)
-            {
-                context.Exception = exception;
-                return context;
-            }
-            finally
-            {
-                context.ProcessedActions++;
-            }
-        }
-
         public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IEnumerable<IExecutable<T>> executables)
         {
             foreach (var executable in executables)
@@ -32,15 +15,21 @@ namespace AleFIT.Workflow.Executors
                 try
                 {
                     context = await executable.ExecuteAsync(context).ConfigureAwait(false);
+                    if (context.State == ExecutionState.Paused)
+                    {
+                        // TODO: udrzovat index zpracovavane akce a k nemu se pak vratit
+                        return context;
+                    }
                 }
                 catch (Exception exception)
                 {
-                    context.Exception = exception;
                     if (!context.Configuration.ContinueOnError)
                     {
-                        context.State = ExecutionState.Failed;
+                        context.SetFailed(exception);
                         return context;
                     }
+
+                    context.Exception = exception;
                 }
                 finally
                 {
@@ -48,8 +37,13 @@ namespace AleFIT.Workflow.Executors
                 }
             }
 
-            context.State = ExecutionState.Completed;
+            context.SetCompleted();
             return context;
+        }
+
+        private void PersistExecutionState()
+        {
+            
         }
     }
 }
