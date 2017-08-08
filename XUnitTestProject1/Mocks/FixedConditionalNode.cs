@@ -12,6 +12,6 @@ namespace AleFIT.Workflow.Test.Mocks
             _result = result;
         }
 
-        public Task<bool> EvaluateAsync(ExecutionContext<T> context) => Task.FromResult<bool>(_result);
+        public Task<bool> EvaluateAsync(ExecutionContext<T> context) => Task.FromResult(_result);
     }
 }

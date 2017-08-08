@@ -38,7 +38,8 @@ namespace AleFIT.Workflow.Executors
                     context.Exception = exception;
                     if (!context.Configuration.ContinueOnError)
                     {
-                        break;
+                        context.State = ExecutionState.Failed;
+                        return context;
                     }
                 }
                 finally
@@ -47,6 +48,7 @@ namespace AleFIT.Workflow.Executors
                 }
             }
 
+            context.State = ExecutionState.Completed;
             return context;
         }
     }

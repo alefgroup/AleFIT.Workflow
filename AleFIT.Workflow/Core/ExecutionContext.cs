@@ -24,6 +24,8 @@ namespace AleFIT.Workflow.Core
 
         public int ProcessedActions { get; set; }
 
+        public ExecutionState State { get; internal set; }
+
         public Exception Exception { get; set; }
 
         public ExecutionState State { get; private set; }
