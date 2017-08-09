@@ -26,8 +26,6 @@ namespace AleFIT.Workflow.Core
 
         public Exception Exception { get; set; }
 
-        public ExecutionState State { get; private set; }
-
         public void Continue()
         {
             if (State == ExecutionState.Paused && _pauseCompletionSources.Count > 0)
