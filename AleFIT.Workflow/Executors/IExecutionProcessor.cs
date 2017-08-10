@@ -7,6 +7,8 @@ namespace AleFIT.Workflow.Executors
 {
     internal interface IExecutionProcessor<T>
     {
-        Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IEnumerable<IExecutable<T>> executables);
+        Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables);
+
+        Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables, int executionIndex);
     }
 }

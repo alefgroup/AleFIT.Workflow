@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,8 +11,8 @@ namespace AleFIT.Workflow.Nodes
 {
     internal class IfElseWorkflowNode<T> : IExecutable<T>
     {
-        private readonly IEnumerable<IConditionallyExecutable<T>> _conditionalActions;
-        private readonly IEnumerable<IExecutable<T>> _elseActions;
+        private readonly IReadOnlyList<IConditionallyExecutable<T>> _conditionalActions;
+        private readonly IReadOnlyList<IExecutable<T>> _elseActions;
         private readonly IExecutionProcessor<T> _executionProcessor;
 
         public IfElseWorkflowNode(
@@ -19,8 +20,8 @@ namespace AleFIT.Workflow.Nodes
             IEnumerable<IExecutable<T>> elseActions,
             IExecutionProcessor<T> executionProcessor)
         {
-            _conditionalActions = conditionalActions;
-            _elseActions = elseActions;
+            _conditionalActions = conditionalActions.ToList();
+            _elseActions = elseActions.ToList();
             _executionProcessor = executionProcessor;
         }
 

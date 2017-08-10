@@ -14,7 +14,7 @@ namespace AleFIT.Workflow.Builders
 {
     public class WorkflowBuilder<T> : IWorkflowBuilder<T>, IConditionalWorkflowBuilder<T>
     {
-        private readonly Queue<IExecutable<T>> _nodes = new Queue<IExecutable<T>>();
+        private readonly List<IExecutable<T>> _nodes = new List<IExecutable<T>>();
         private readonly IExecutionProcessor<T> _executionProcessor = new SequentialExecutionProcessor<T>();
         private readonly IWorkflowConfiguration _configuration;
 
@@ -40,7 +40,7 @@ namespace AleFIT.Workflow.Builders
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
 
-            _nodes.Enqueue(action);
+            _nodes.Add(action);
             return this;
         }
 
@@ -77,7 +77,7 @@ namespace AleFIT.Workflow.Builders
             if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
             if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
 
-            _nodes.Enqueue(IfElseNodeBuilder<T>
+            _nodes.Add(IfElseNodeBuilder<T>
                 .CreateUsingProcessor(_executionProcessor)
                 .WithIf(condition, Enumerable.Repeat(actionIfTrue, 1))
                 .Else(Enumerable.Repeat(actionIfFalse, 1)));
@@ -112,7 +112,7 @@ namespace AleFIT.Workflow.Builders
 
         public IWorkflowBuilder<T> Pause()
         {
-            _nodes.Enqueue(new PauseWorkflowNode<T>());
+            _nodes.Add(new PauseWorkflowNode<T>());
             return this;
         }
 
@@ -162,7 +162,7 @@ namespace AleFIT.Workflow.Builders
         {
             if (elseActions == null) throw new ArgumentNullException(nameof(elseActions));
 
-            _nodes.Enqueue(_ifElseNodeBuilder.Else(elseActions));
+            _nodes.Add(_ifElseNodeBuilder.Else(elseActions));
 
             return this;
         }

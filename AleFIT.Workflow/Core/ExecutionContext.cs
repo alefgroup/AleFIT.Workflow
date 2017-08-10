@@ -8,14 +8,12 @@ namespace AleFIT.Workflow.Core
 {
     public class ExecutionContext<T>
     {
-        private readonly Queue<TaskCompletionSource<ExecutionContext<T>>> _pauseCompletionSources = 
-            new Queue<TaskCompletionSource<ExecutionContext<T>>>();
-
         public ExecutionContext(T data, IWorkflowConfiguration configuration)
         {
             Data = data;
             Configuration = configuration;
             State = ExecutionState.Running;
+            PersistedExecutionIndexes = new Stack<int>();
         }
 
         public T Data { get; set; }
@@ -28,24 +26,11 @@ namespace AleFIT.Workflow.Core
 
         public ExecutionState State { get; private set; }
 
-        public void Continue()
-        {
-            if (State == ExecutionState.Paused && _pauseCompletionSources.Count > 0)
-            {
-                var completionSource = _pauseCompletionSources.Dequeue();
-                State = ExecutionState.Running;
-                completionSource.TrySetResult(this);
-            }
-            else
-            {
-                throw new InvalidOperationException("Workflow is not in Paused state or there are no actions Pause actions in queue.");
-            }
-        }
+        internal Stack<int> PersistedExecutionIndexes { get; }
 
-        internal void SetPaused(TaskCompletionSource<ExecutionContext<T>> completionSource)
+        internal void SetPaused()
         {
             State = ExecutionState.Paused;
-            _pauseCompletionSources.Enqueue(completionSource);
         }
 
         internal void SetCompleted()
@@ -57,6 +42,11 @@ namespace AleFIT.Workflow.Core
         {
             Exception = exception;
             State = ExecutionState.Failed;
+        }
+
+        internal void SetRunning()
+        {
+            State = ExecutionState.Running;
         }
     }
 }

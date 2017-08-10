@@ -8,21 +8,35 @@ namespace AleFIT.Workflow.Executors
 {
     internal class SequentialExecutionProcessor<T> : IExecutionProcessor<T>
     {
-        public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IEnumerable<IExecutable<T>> executables)
+        public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables)
         {
-            foreach (var executable in executables)
+            int index = 0;
+            if (context.State == ExecutionState.Paused)
+            {
+                index = context.PersistedExecutionIndexes.Pop();
+            }
+
+            return await ProcessAsync(context, executables, index).ConfigureAwait(false);
+        }
+
+        public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables, int executionIndex)
+        {
+            for (var index = executionIndex; index < executables.Count; index++)
             {
                 try
                 {
-                    context = await executable.ExecuteAsync(context).ConfigureAwait(false);
+                    context = await executables[index].ExecuteAsync(context).ConfigureAwait(false);
                     if (context.State == ExecutionState.Paused)
                     {
-                        // TODO: udrzovat index zpracovavane akce a k nemu se pak vratit
+                        context.PersistedExecutionIndexes.Push(index);
                         return context;
                     }
+
+                    context.ProcessedActions++;
                 }
                 catch (Exception exception)
                 {
+                    context.ProcessedActions++;
                     if (!context.Configuration.ContinueOnError)
                     {
                         context.SetFailed(exception);
@@ -31,19 +45,10 @@ namespace AleFIT.Workflow.Executors
 
                     context.Exception = exception;
                 }
-                finally
-                {
-                    context.ProcessedActions++;
-                }
             }
 
             context.SetCompleted();
             return context;
-        }
-
-        private void PersistExecutionState()
-        {
-            
         }
     }
 }

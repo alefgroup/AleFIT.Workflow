@@ -10,5 +10,7 @@ namespace AleFIT.Workflow
     public interface IWorkflow<T> : IExecutable<T>
     {
         Task<ExecutionContext<T>> ExecuteAsync(T data);
+
+        Task<ExecutionContext<T>> ContinueAsync(ExecutionContext<T> context);
     }
 }
