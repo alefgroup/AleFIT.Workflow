@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
 using AleFIT.Workflow.Core;
 
 namespace AleFIT.Workflow.Executors
 {
-    internal class SequentialExecutionProcessor<T> : IExecutionProcessor<T>
+    internal class RetrySequentialExecutionProcessor<T> : IExecutionProcessor<T>
     {
-        public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables)
+        public Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables)
         {
             int index = 0;
             if (context.State == ExecutionState.Paused)
@@ -16,10 +17,30 @@ namespace AleFIT.Workflow.Executors
                 index = context.PersistedExecutionIndexes.Pop();
             }
 
-            return await ProcessAsync(context, executables, index).ConfigureAwait(false);
+            return ProcessAsync(context, executables, index);
         }
 
         public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables, int executionIndex)
+        {
+            int currentRetryCount = -1;
+            int maxRetryCount = context.InternalConfiguration.MaxRetryCount;
+
+            ExecutionContext<T> result;
+            do
+            {
+                context.SetCompleted();
+                result = await ProcessWithRetriesAsync(context, executables, executionIndex).ConfigureAwait(false);
+                currentRetryCount++;
+            }
+            while (result.State == ExecutionState.Failed && currentRetryCount < maxRetryCount);
+
+            return result;
+        }
+
+        private async Task<ExecutionContext<T>> ProcessWithRetriesAsync(
+            ExecutionContext<T> context,
+            IReadOnlyList<IExecutable<T>> executables,
+            int executionIndex)
         {
             for (var index = executionIndex; index < executables.Count; index++)
             {

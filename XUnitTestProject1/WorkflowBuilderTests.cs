@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 using AleFIT.Workflow.Builders;
@@ -10,7 +11,7 @@ using Xunit;
 
 namespace AleFIT.Workflow.Test
 {
-    public class WorkflowBuilderBuild
+    public class WorkflowBuilderTests
     {
         [Fact]
         public async Task EmptyWorkflow_ProduceValidWorkflow()
@@ -216,7 +217,7 @@ namespace AleFIT.Workflow.Test
 
             Assert.Equal(0, result.Data.SampleData);
             Assert.Equal(ExecutionState.Paused, result.State);
-            Assert.Equal(3, result.ProcessedActions); // inner workflow and if-else node are not completed yet
+            Assert.Equal(3, result.ProcessedActions);
 
             await workflow.ContinueAsync(result);
 
