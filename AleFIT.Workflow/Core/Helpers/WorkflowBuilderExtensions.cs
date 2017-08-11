@@ -19,8 +19,10 @@ namespace AleFIT.Workflow.Core.Helpers
             return builder.Do(new ExecutableNode<T>(action));
         }
 
-        public static IWorkflowBuilder<T> DoWithRetry<T>(this IWorkflowBuilder<T> builder,
-            int maxRetries, Func<ExecutionContext<T>, Task<ExecutionContext<T>>> action)
+        public static IWorkflowBuilder<T> DoWithRetry<T>(
+            this IWorkflowBuilder<T> builder, 
+            int maxRetries, 
+            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> action)
         {
             return builder.DoWithRetry(maxRetries, new ExecutableNode<T>(action));
         }
@@ -78,8 +80,8 @@ namespace AleFIT.Workflow.Core.Helpers
 
         public static IConditionalWorkflowBuilder<T> If<T>(
             this IWorkflowBuilder<T> builder,
-            Func<ExecutionContext<T>,
-            Task<bool>> condition, IExecutable<T> actionIfTrue)
+            Func<ExecutionContext<T>, Task<bool>> condition, 
+            IExecutable<T> actionIfTrue)
         {
             if (condition == null) throw new ArgumentNullException(nameof(condition));
             if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));

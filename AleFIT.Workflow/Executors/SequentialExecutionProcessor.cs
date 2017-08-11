@@ -38,6 +38,7 @@ namespace AleFIT.Workflow.Executors
                             return context;
                         case ExecutionState.Failed:
                             context.IncrementProcessedActions();
+                            if (context.Configuration.ContinueOnError) continue;
                             return context;
                         default:
                             throw new ArgumentOutOfRangeException();
