@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,13 +15,15 @@ namespace AleFIT.Workflow.Builders
 {
     public class WorkflowBuilder<T> : IWorkflowBuilder<T>, IConditionalWorkflowBuilder<T>
     {
-        private readonly Queue<IExecutable<T>> _nodes = new Queue<IExecutable<T>>();
-        private readonly IExecutionProcessor<T> _executionProcessor = new SequentialExecutionProcessor<T>();
-        private readonly IWorkflowConfiguration _configuration;
+        private readonly List<IExecutable<T>> _nodes = new List<IExecutable<T>>();
+        private readonly IExecutionProcessor<T> _sequentialExecutionProcessor = new SequentialExecutionProcessor<T>();
+        private readonly IExecutionProcessor<T> _parallelExecutionProcessor = new ParallelExecutionProcessor<T>();
+        private readonly IExecutionProcessor<T> _retryExecutionProcessor = new RetrySequentialExecutionProcessor<T>();
+        private readonly IInternalWorkflowConfiguration _configuration;
 
         private IWithIfNodeBuilder<T> _ifElseNodeBuilder;
 
-        private WorkflowBuilder(IWorkflowConfiguration configuration)
+        private WorkflowBuilder(IInternalWorkflowConfiguration configuration)
         {
             _configuration = configuration;
         }
@@ -32,6 +35,7 @@ namespace AleFIT.Workflow.Builders
             var configuration = WorkflowConfiguration.CreateDefault();
 
             configureAction(configuration);
+            configuration.IsDefault = false;
 
             return new WorkflowBuilder<T>(configuration);
         }
@@ -40,7 +44,7 @@ namespace AleFIT.Workflow.Builders
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
 
-            _nodes.Enqueue(action);
+            _nodes.Add(action);
             return this;
         }
 
@@ -51,12 +55,38 @@ namespace AleFIT.Workflow.Builders
             return Do(new ExecutableNode<T>(action));
         }
 
+        public IWorkflowBuilder<T> DoWithRetry(int maxRetries, IExecutable<T> action)
+        {
+            if (action == null) throw new ArgumentNullException(nameof(action));
+            if (maxRetries < 0)
+            {
+                throw new ArgumentException($"{nameof(maxRetries)} cannot be negative.");
+            }
+
+            var retryConfiguration = WorkflowConfiguration.CreateDefault();
+            
+            // retries would be ignored if we continued on error
+            retryConfiguration.ContinueOnError = false;
+            retryConfiguration.MaxRetryCount = maxRetries;
+            retryConfiguration.IsDefault = false;
+
+            var retryWorkflow = new Workflow<T>(_retryExecutionProcessor, retryConfiguration, Enumerable.Repeat(action, 1));
+
+            _nodes.Add(retryWorkflow);
+            return this;
+        }
+
+        public IWorkflowBuilder<T> DoWithRetry(int maxRetries, Func<ExecutionContext<T>, Task<ExecutionContext<T>>> action)
+        {
+            return DoWithRetry(maxRetries, new ExecutableNode<T>(action));
+        }
+
         public IConditionalWorkflowBuilder<T> If(IConditional<T> condition, IExecutable<T> actionIfTrue)
         {
             if (condition == null) throw new ArgumentNullException(nameof(condition));
             if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
 
-            _ifElseNodeBuilder = IfElseNodeBuilder<T>.CreateUsingProcessor(_executionProcessor)
+            _ifElseNodeBuilder = IfElseNodeBuilder<T>.CreateUsingProcessor(_sequentialExecutionProcessor)
                 .WithIf(condition, Enumerable.Repeat(actionIfTrue, 1));
 
             return this;
@@ -77,8 +107,8 @@ namespace AleFIT.Workflow.Builders
             if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
             if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
 
-            _nodes.Enqueue(IfElseNodeBuilder<T>
-                .CreateUsingProcessor(_executionProcessor)
+            _nodes.Add(IfElseNodeBuilder<T>
+                .CreateUsingProcessor(_sequentialExecutionProcessor)
                 .WithIf(condition, Enumerable.Repeat(actionIfTrue, 1))
                 .Else(Enumerable.Repeat(actionIfFalse, 1)));
 
@@ -112,7 +142,22 @@ namespace AleFIT.Workflow.Builders
 
         public IWorkflowBuilder<T> Pause()
         {
-            _nodes.Enqueue(new PauseWorkflowNode<T>());
+            _nodes.Add(new PauseWorkflowNode<T>());
+            return this;
+        }
+
+        public IWorkflowBuilder<T> DoInParallel(params IExecutable<T>[] actions)
+        {
+            if (actions == null) throw new ArgumentNullException(nameof(actions));
+
+            return DoInParallel((IEnumerable<IExecutable<T>>)actions);
+        }
+
+        public IWorkflowBuilder<T> DoInParallel(IEnumerable<IExecutable<T>> actions)
+        {
+            if (actions == null) throw new ArgumentNullException(nameof(actions));
+            
+            _nodes.Add(new Workflow<T>(_parallelExecutionProcessor, (IInternalWorkflowConfiguration)_configuration, actions));
             return this;
         }
 
@@ -144,6 +189,14 @@ namespace AleFIT.Workflow.Builders
             return ElseIf(new ConditionalNode<T>(condition), new ExecutableNode<T>(actionIfTrue));
         }
 
+        public IConditionalWorkflowBuilder<T> ElseIf(Func<ExecutionContext<T>, Task<bool>> condition, IExecutable<T> actionIfTrue)
+        {
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+
+            return ElseIf(condition, actionIfTrue.ExecuteAsync);
+        }
+
         public IWorkflowBuilder<T> Else(IExecutable<T> elseAction)
         {
             if (elseAction == null) throw new ArgumentNullException(nameof(elseAction));
@@ -162,7 +215,7 @@ namespace AleFIT.Workflow.Builders
         {
             if (elseActions == null) throw new ArgumentNullException(nameof(elseActions));
 
-            _nodes.Enqueue(_ifElseNodeBuilder.Else(elseActions));
+            _nodes.Add(_ifElseNodeBuilder.Else(elseActions));
 
             return this;
         }
@@ -176,7 +229,7 @@ namespace AleFIT.Workflow.Builders
 
         public IWorkflow<T> Build()
         {
-            return new Workflow<T>(_executionProcessor, _configuration, _nodes);
+            return new Workflow<T>(_sequentialExecutionProcessor, _configuration, _nodes);
         }
     }
 }

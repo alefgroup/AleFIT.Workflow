@@ -9,12 +9,18 @@ namespace AleFIT.Workflow.Nodes
 {
     internal class PauseWorkflowNode<T> : IExecutable<T>
     {
-        private readonly TaskCompletionSource<ExecutionContext<T>> _completionSource =
-            new TaskCompletionSource<ExecutionContext<T>>();
-
         public Task<ExecutionContext<T>> ExecuteAsync(ExecutionContext<T> context)
         {
-            context.SetPaused(_completionSource);
+            if (context.State == ExecutionState.Running)
+            {
+                context.SetPaused();
+            }
+            else
+            {
+                // continue when pause is executed again on already paused context
+                context.SetRunning();
+            }
+            
             return Task.FromResult(context);
         }
     }

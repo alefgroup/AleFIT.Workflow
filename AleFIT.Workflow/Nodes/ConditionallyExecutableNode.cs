@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 using AleFIT.Workflow.Core;
@@ -25,7 +26,7 @@ namespace AleFIT.Workflow.Nodes
 
 
         public async Task<ExecutionContext<T>> ExecuteAsync(ExecutionContext<T> context) => 
-            await _executionProcessor.ProcessAsync(context, _actionsTrue).ConfigureAwait(false);
+            await _executionProcessor.ProcessAsync(context, _actionsTrue.ToList()).ConfigureAwait(false);
 
         public async Task<bool> EvaluateAsync(ExecutionContext<T> context) => 
             await _condition.EvaluateAsync(context).ConfigureAwait(false);
