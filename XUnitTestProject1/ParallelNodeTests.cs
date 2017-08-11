@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using AleFIT.Workflow.Builders;
 using AleFIT.Workflow.Core;
+using AleFIT.Workflow.Core.Helpers;
 using AleFIT.Workflow.Test.Mocks;
 using AleFIT.Workflow.Test.TestData;
 

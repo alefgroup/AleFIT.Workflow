@@ -10,24 +10,6 @@ namespace AleFIT.Workflow.Builders.Interfaces
     {
         IConditionalWorkflowBuilder<T> ElseIf(IConditional<T> condition, IExecutable<T> actionIfTrue);
 
-        IConditionalWorkflowBuilder<T> ElseIf(
-            IConditional<T> condition, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue);
-
-        IConditionalWorkflowBuilder<T> ElseIf(
-            Func<ExecutionContext<T>, Task<bool>> condition, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue);
-
-        IConditionalWorkflowBuilder<T> ElseIf(
-            Func<ExecutionContext<T>, Task<bool>> condition,
-            IExecutable<T> actionIfTrue);
-
-        IWorkflowBuilder<T> Else(IExecutable<T> elseAction);
-
-        IWorkflowBuilder<T> Else(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> elseAction);
-
         IWorkflowBuilder<T> Else(IEnumerable<IExecutable<T>> elseActions);
-
-        IWorkflowBuilder<T> Else(IEnumerable<Func<ExecutionContext<T>, Task<ExecutionContext<T>>>> elseActions);
     }
 }

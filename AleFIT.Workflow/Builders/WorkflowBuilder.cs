@@ -48,13 +48,6 @@ namespace AleFIT.Workflow.Builders
             return this;
         }
 
-        public IWorkflowBuilder<T> Do(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> action)
-        {
-            if (action == null) throw new ArgumentNullException(nameof(action));
-
-            return Do(new ExecutableNode<T>(action));
-        }
-
         public IWorkflowBuilder<T> DoWithRetry(int maxRetries, IExecutable<T> action)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
@@ -76,11 +69,6 @@ namespace AleFIT.Workflow.Builders
             return this;
         }
 
-        public IWorkflowBuilder<T> DoWithRetry(int maxRetries, Func<ExecutionContext<T>, Task<ExecutionContext<T>>> action)
-        {
-            return DoWithRetry(maxRetries, new ExecutableNode<T>(action));
-        }
-
         public IConditionalWorkflowBuilder<T> If(IConditional<T> condition, IExecutable<T> actionIfTrue)
         {
             if (condition == null) throw new ArgumentNullException(nameof(condition));
@@ -90,15 +78,6 @@ namespace AleFIT.Workflow.Builders
                 .WithIf(condition, Enumerable.Repeat(actionIfTrue, 1));
 
             return this;
-        }
-
-        public IWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, IExecutable<T> actionIfTrue, IExecutable<T> actionIfFalse)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-            if (actionIfFalse == null) throw new ArgumentNullException(nameof(actionIfFalse));
-
-            return If(new ConditionalNode<T>(condition), actionIfTrue, actionIfFalse);
         }
 
         public IWorkflowBuilder<T> If(IConditional<T> condition, IExecutable<T> actionIfTrue, IExecutable<T> actionIfFalse)
@@ -115,42 +94,10 @@ namespace AleFIT.Workflow.Builders
             return this;
         }
 
-        public IConditionalWorkflowBuilder<T> If(IConditional<T> condition, Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-
-            return If(condition, new ExecutableNode<T>(actionIfTrue));
-        }
-
-        public IConditionalWorkflowBuilder<T> If(
-            Func<ExecutionContext<T>, Task<bool>> condition, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-
-            return If(new ConditionalNode<T>(condition), new ExecutableNode<T>(actionIfTrue));
-        }
-
-        public IConditionalWorkflowBuilder<T> If(Func<ExecutionContext<T>, Task<bool>> condition, IExecutable<T> actionIfTrue)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-
-            return If(new ConditionalNode<T>(condition), actionIfTrue);
-        }
-
         public IWorkflowBuilder<T> Pause()
         {
             _nodes.Add(new PauseWorkflowNode<T>());
             return this;
-        }
-
-        public IWorkflowBuilder<T> DoInParallel(params IExecutable<T>[] actions)
-        {
-            if (actions == null) throw new ArgumentNullException(nameof(actions));
-
-            return DoInParallel((IEnumerable<IExecutable<T>>)actions);
         }
 
         public IWorkflowBuilder<T> DoInParallel(IEnumerable<IExecutable<T>> actions)
@@ -171,46 +118,6 @@ namespace AleFIT.Workflow.Builders
             return this;
         }
 
-        public IConditionalWorkflowBuilder<T> ElseIf(IConditional<T> condition, Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-
-            return ElseIf(condition, new ExecutableNode<T>(actionIfTrue));
-        }
-
-        public IConditionalWorkflowBuilder<T> ElseIf(
-            Func<ExecutionContext<T>, Task<bool>> condition, 
-            Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-
-            return ElseIf(new ConditionalNode<T>(condition), new ExecutableNode<T>(actionIfTrue));
-        }
-
-        public IConditionalWorkflowBuilder<T> ElseIf(Func<ExecutionContext<T>, Task<bool>> condition, IExecutable<T> actionIfTrue)
-        {
-            if (condition == null) throw new ArgumentNullException(nameof(condition));
-            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
-
-            return ElseIf(condition, actionIfTrue.ExecuteAsync);
-        }
-
-        public IWorkflowBuilder<T> Else(IExecutable<T> elseAction)
-        {
-            if (elseAction == null) throw new ArgumentNullException(nameof(elseAction));
-
-            return Else(Enumerable.Repeat(elseAction, 1));
-        }
-
-        public IWorkflowBuilder<T> Else(Func<ExecutionContext<T>, Task<ExecutionContext<T>>> elseAction)
-        {
-            if (elseAction == null) throw new ArgumentNullException(nameof(elseAction));
-
-            return Else(new ExecutableNode<T>(elseAction));
-        }
-
         public IWorkflowBuilder<T> Else(IEnumerable<IExecutable<T>> elseActions)
         {
             if (elseActions == null) throw new ArgumentNullException(nameof(elseActions));
@@ -218,13 +125,6 @@ namespace AleFIT.Workflow.Builders
             _nodes.Add(_ifElseNodeBuilder.Else(elseActions));
 
             return this;
-        }
-
-        public IWorkflowBuilder<T> Else(IEnumerable<Func<ExecutionContext<T>, Task<ExecutionContext<T>>>> elseActions)
-        {
-            if (elseActions == null) throw new ArgumentNullException(nameof(elseActions));
-
-            return Else(elseActions.Select(action => new ExecutableNode<T>(action)));
         }
 
         public IWorkflow<T> Build()
