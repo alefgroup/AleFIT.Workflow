@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 using AleFIT.Workflow.Core;
@@ -11,6 +8,9 @@ using AleFIT.Workflow.Core.Helpers;
 
 namespace AleFIT.Workflow.Executors
 {
+    /// <summary>
+    /// Execution processor that executes actions in parallel.
+    /// </summary>
     internal class ParallelExecutionProcessor<T> : IExecutionProcessor<T>
     {
         public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables)
@@ -29,12 +29,14 @@ namespace AleFIT.Workflow.Executors
         {
             try
             {
+                // skip actions since executionIndex and execute them in parallel with defined degree of parallelism
                 await executables.Skip(executionIndex).ForEachAsync(
                     context.Configuration.DegreeOfParallelism,
                     executable => ProcessSingle(context, executable)).ConfigureAwait(false);
             }
             catch (AggregateException)
             {
+                // don't register caught aggregated exception because all potential exceptions are already caught
                 if (!context.Configuration.ContinueOnError)
                 {
                     context.SetFailed();

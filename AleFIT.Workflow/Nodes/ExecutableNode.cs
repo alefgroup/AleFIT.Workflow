@@ -5,6 +5,9 @@ using AleFIT.Workflow.Core;
 
 namespace AleFIT.Workflow.Nodes
 {
+    /// <summary>
+    /// This executable node just hold the action that will be executed.
+    /// </summary>
     internal class ExecutableNode<T> : IExecutable<T>
     {
         private readonly Func<ExecutionContext<T>, Task<ExecutionContext<T>>> _action;

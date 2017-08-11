@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 using AleFIT.Workflow.Core;
 
 namespace AleFIT.Workflow.Executors
 {
+    /// <summary>
+    /// Execution processor that executes actions in sequence and retries if the execution fails.
+    /// </summary>
     internal class RetrySequentialExecutionProcessor<T> : IExecutionProcessor<T>
     {
         public Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables)
@@ -28,7 +30,9 @@ namespace AleFIT.Workflow.Executors
             ExecutionContext<T> result;
             do
             {
-                context.SetCompleted();
+                // reset state to running in case it failed during previous execution
+                // otherwise we don't know if it succeeded during retry execution
+                context.SetRunning();
                 result = await ProcessWithRetriesAsync(context, executables, executionIndex).ConfigureAwait(false);
                 currentRetryCount++;
             }

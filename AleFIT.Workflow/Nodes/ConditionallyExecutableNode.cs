@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -8,6 +7,10 @@ using AleFIT.Workflow.Executors;
 
 namespace AleFIT.Workflow.Nodes
 {
+    /// <summary>
+    /// This class just holds the condition and an executable that will
+    /// be executed using a specific processor.
+    /// </summary>
     internal class ConditionallyExecutableNode<T> : IConditionallyExecutable<T>
     {
         private readonly IConditional<T> _condition;

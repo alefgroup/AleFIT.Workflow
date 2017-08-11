@@ -6,6 +6,9 @@ using AleFIT.Workflow.Core;
 
 namespace AleFIT.Workflow.Executors
 {
+    /// <summary>
+    /// Execution processor that executes actions in sequence.
+    /// </summary>
     internal class SequentialExecutionProcessor<T> : IExecutionProcessor<T>
     {
         public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables)
@@ -13,6 +16,7 @@ namespace AleFIT.Workflow.Executors
             int index = 0;
             if (context.State == ExecutionState.Paused)
             {
+                // use persisted index if execution is paused so it continues from the action where it was paused
                 index = context.PersistedExecutionIndexes.Pop();
             }
 
@@ -21,12 +25,14 @@ namespace AleFIT.Workflow.Executors
 
         public async Task<ExecutionContext<T>> ProcessAsync(ExecutionContext<T> context, IReadOnlyList<IExecutable<T>> executables, int executionIndex)
         {
+            // iterate actions from provided index
             for (var index = executionIndex; index < executables.Count; index++)
             {
                 try
                 {
                     context = await executables[index].ExecuteAsync(context).ConfigureAwait(false);
 
+                    // check state after execution
                     switch (context.State)
                     {
                         case ExecutionState.Completed:
@@ -34,10 +40,13 @@ namespace AleFIT.Workflow.Executors
                             context.IncrementProcessedActions();
                             continue;
                         case ExecutionState.Paused:
+                            // persist current execution index
                             context.PersistedExecutionIndexes.Push(index);
                             return context;
                         case ExecutionState.Failed:
                             context.IncrementProcessedActions();
+
+                            // check whether to end the execution based on configuration
                             if (context.Configuration.ContinueOnError) continue;
                             return context;
                         default:
@@ -52,7 +61,8 @@ namespace AleFIT.Workflow.Executors
                         context.SetFailed(exception);
                         return context;
                     }
-
+                    
+                    // just register caught exception and continue execution
                     context.AddException(exception);
                 }
             }

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 using AleFIT.Workflow.Core;
@@ -27,6 +25,7 @@ namespace AleFIT.Workflow.Nodes
 
         public async Task<ExecutionContext<T>> ExecuteAsync(ExecutionContext<T> context)
         {
+            // evaluate all conditional executions (these include ElseIf conditions)
             foreach (var conditionalAction in _conditionalActions)
             {
                 if (await conditionalAction.EvaluateAsync(context).ConfigureAwait(false))
@@ -35,6 +34,7 @@ namespace AleFIT.Workflow.Nodes
                 }
             }
 
+            // if none of them should be executed => execute else actions
             return await _executionProcessor.ProcessAsync(context, _elseActions).ConfigureAwait(false);
         }
     }

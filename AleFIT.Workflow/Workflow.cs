@@ -9,7 +9,11 @@ using AleFIT.Workflow.Executors;
 
 namespace AleFIT.Workflow
 {
-    public class Workflow<T> : IWorkflow<T>
+    /// <summary>
+    /// Workflow call that holds all the actions that should should be executed
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    internal class Workflow<T> : IWorkflow<T>
     {
         private readonly IInternalWorkflowConfiguration _configuration;
         private readonly IExecutionProcessor<T> _executionProcessor;
@@ -50,6 +54,8 @@ namespace AleFIT.Workflow
 
         public async Task<ExecutionContext<T>> ExecuteAsync(T data)
         {
+            // create context using provided data a configuration
+            // data can be null
             var context = new ExecutionContext<T>(data, _configuration);
 
             return await _executionProcessor.ProcessAsync(context, _workflowNodes).ConfigureAwait(false);
@@ -59,6 +65,7 @@ namespace AleFIT.Workflow
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
+            // cannot resume execution if state is not Paused or there are no persisted execution indexes
             if (context.State == ExecutionState.Paused && context.PersistedExecutionIndexes.Count > 0)
             {
                 return await _executionProcessor.ProcessAsync(context, _workflowNodes).ConfigureAwait(false);

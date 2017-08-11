@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace AleFIT.Workflow.Core.Configuration
+﻿namespace AleFIT.Workflow.Core.Configuration
 {
     internal class WorkflowConfiguration : IInternalWorkflowConfiguration, IMutableWorkflowConfiguration
     {
