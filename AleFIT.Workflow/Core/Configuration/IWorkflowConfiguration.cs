@@ -5,7 +5,5 @@
         bool ContinueOnError { get; }
 
         int DegreeOfParallelism { get; }        
-
-        IWorkflowConfiguration Clone();
     }
 }

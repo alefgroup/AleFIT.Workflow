@@ -17,12 +17,7 @@ namespace AleFIT.Workflow.Core.Configuration
         public bool IsDefault { get; set; }
 
         public int MaxRetryCount { get; set; }
-
-        public IWorkflowConfiguration Clone()
-        {
-            return new WorkflowConfiguration(ContinueOnError, DegreeOfParallelism);
-        }
-
+        
         internal static WorkflowConfiguration CreateDefault()
         {
             return new WorkflowConfiguration(false, 4) { IsDefault = true };
