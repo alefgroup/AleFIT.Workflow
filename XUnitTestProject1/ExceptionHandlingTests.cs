@@ -130,10 +130,7 @@ namespace AleFIT.Workflow.Test
                 .Create(configuration => { configuration.ContinueOnError = false; })
                 .DoInParallel(
                     new IncrementNode(),
-                    new IncrementNode(),
-                    new ThrowExceptionNode<GenericContext<int>>(),
-                    new IncrementNode(),
-                    new IncrementNode())
+                    new ThrowExceptionNode<GenericContext<int>>())
                 .Do(new IncrementNode())
                 .Do(new IncrementNode())
                 .Build();
@@ -141,9 +138,8 @@ namespace AleFIT.Workflow.Test
             var context = await workflow.ExecuteAsync(new GenericContext<int>(1));
 
             Assert.Equal(ExecutionState.Failed, context.State);
-            Assert.Equal(6, context.ProcessedActions);
             Assert.NotEmpty(context.Exceptions);
-            Assert.Equal(5, context.Data.SampleData);
+            Assert.InRange(context.Data.SampleData, 1, 2);
         }
 
         [Fact]

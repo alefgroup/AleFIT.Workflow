@@ -10,6 +10,8 @@ namespace AleFIT.Workflow.Builders.Interfaces
     {
         IConditionalWorkflowBuilder<T> ElseIf(IConditional<T> condition, IExecutable<T> actionIfTrue);
 
+        IIfWithoutThenWorkflowBuilder<T> ElseIf(IConditional<T> condition);
+
         IWorkflowBuilder<T> Else(IEnumerable<IExecutable<T>> elseActions);
     }
 }

@@ -13,7 +13,7 @@ using AleFIT.Workflow.Nodes;
 
 namespace AleFIT.Workflow.Builders
 {
-    public class WorkflowBuilder<T> : IWorkflowBuilder<T>, IConditionalWorkflowBuilder<T>
+    public class WorkflowBuilder<T> : IWorkflowBuilder<T>, IConditionalWorkflowBuilder<T>, IIfWithoutThenWorkflowBuilder<T>
     {
         private readonly List<IExecutable<T>> _nodes = new List<IExecutable<T>>();
         private readonly IExecutionProcessor<T> _sequentialExecutionProcessor = new SequentialExecutionProcessor<T>();
@@ -21,7 +21,8 @@ namespace AleFIT.Workflow.Builders
         private readonly IExecutionProcessor<T> _retryExecutionProcessor = new RetrySequentialExecutionProcessor<T>();
         private readonly IInternalWorkflowConfiguration _configuration;
 
-        private IWithIfNodeBuilder<T> _ifElseNodeBuilder;
+        private IWithIfThenNodeBuilder<T> _ifThenNodeBuilder;
+        private IConditional<T> _lastIfCondition;
 
         private WorkflowBuilder(IInternalWorkflowConfiguration configuration)
         {
@@ -74,8 +75,8 @@ namespace AleFIT.Workflow.Builders
             if (condition == null) throw new ArgumentNullException(nameof(condition));
             if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
 
-            _ifElseNodeBuilder = IfElseNodeBuilder<T>.CreateUsingProcessor(_sequentialExecutionProcessor)
-                .WithIf(condition, Enumerable.Repeat(actionIfTrue, 1));
+            _ifThenNodeBuilder = IfElseNodeBuilder<T>.CreateUsingProcessor(_sequentialExecutionProcessor)
+                .WithIfThen(condition, Enumerable.Repeat(actionIfTrue, 1));
 
             return this;
         }
@@ -88,10 +89,27 @@ namespace AleFIT.Workflow.Builders
 
             _nodes.Add(IfElseNodeBuilder<T>
                 .CreateUsingProcessor(_sequentialExecutionProcessor)
-                .WithIf(condition, Enumerable.Repeat(actionIfTrue, 1))
+                .WithIfThen(condition, Enumerable.Repeat(actionIfTrue, 1))
                 .Else(Enumerable.Repeat(actionIfFalse, 1)));
 
             return this;
+        }
+
+        public IIfWithoutThenWorkflowBuilder<T> If(IConditional<T> condition)
+        {
+            _lastIfCondition = condition ?? throw new ArgumentNullException(nameof(condition));
+            return this;
+        }
+
+        public IConditionalWorkflowBuilder<T> Then(IExecutable<T> actionIfTrue)
+        {
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+
+            if (_ifThenNodeBuilder == null)
+            {
+                return If(_lastIfCondition, actionIfTrue);
+            }
+            return ElseIf(_lastIfCondition, actionIfTrue);
         }
 
         public IWorkflowBuilder<T> Pause()
@@ -113,8 +131,14 @@ namespace AleFIT.Workflow.Builders
             if (condition == null) throw new ArgumentNullException(nameof(condition));
             if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
 
-            _ifElseNodeBuilder.ElseIf(condition, actionIfTrue);
+            _ifThenNodeBuilder.ElseIf(condition, actionIfTrue);
 
+            return this;
+        }
+
+        public IIfWithoutThenWorkflowBuilder<T> ElseIf(IConditional<T> condition)
+        {
+            _lastIfCondition = condition ?? throw new ArgumentNullException(nameof(condition));
             return this;
         }
 
@@ -122,7 +146,8 @@ namespace AleFIT.Workflow.Builders
         {
             if (elseActions == null) throw new ArgumentNullException(nameof(elseActions));
 
-            _nodes.Add(_ifElseNodeBuilder.Else(elseActions));
+            _nodes.Add(_ifThenNodeBuilder.Else(elseActions));
+            _ifThenNodeBuilder = null;
 
             return this;
         }

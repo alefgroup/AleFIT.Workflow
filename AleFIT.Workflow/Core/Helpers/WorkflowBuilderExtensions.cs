@@ -47,7 +47,7 @@ namespace AleFIT.Workflow.Core.Helpers
 
             return builder.If(new ConditionalNode<T>(condition), actionIfTrue, actionIfFalse);
         }
-
+        
         public static IConditionalWorkflowBuilder<T> If<T>(
             this IWorkflowBuilder<T> builder,
             IConditional<T> condition, 

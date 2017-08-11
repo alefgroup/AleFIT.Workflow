@@ -155,5 +155,107 @@ namespace AleFIT.Workflow.Test
             Assert.Equal(ExecutionState.Completed, context.State);
             Assert.Equal(1, context.Data.SampleData);
         }
+
+        [Fact]
+        public async Task IfWithoutThen_ConditionTrue_ShouldExecuteTrueAction()
+        {
+            var workflow = WorkflowBuilder<GenericContext<int>>.Create()
+                .If(new FixedConditionalNode<GenericContext<int>>(true))
+                    .Then(new IncrementNode())
+                .Else(new DecrementNode())
+            .Build();
+
+            var context = await workflow.ExecuteAsync(new GenericContext<int>(0));
+
+            Assert.Equal(ExecutionState.Completed, context.State);
+            Assert.Equal(1, context.Data.SampleData);
+        }
+
+        [Fact]
+        public async Task IfWithoutThen_ConditionFalse_ShouldExecuteFalseAction()
+        {
+            var workflow = WorkflowBuilder<GenericContext<int>>.Create()
+                .If(new FixedConditionalNode<GenericContext<int>>(false))
+                    .Then(new DecrementNode())
+                .Else(new IncrementNode())
+            .Build();
+
+            var context = await workflow.ExecuteAsync(new GenericContext<int>(0));
+
+            Assert.Equal(ExecutionState.Completed, context.State);
+            Assert.Equal(1, context.Data.SampleData);
+        }
+
+        [Fact]
+        public async Task IfWithoutThen_NestedConditions_ShouldExecuteNormally()
+        {
+            var workflow = WorkflowBuilder<GenericContext<int>>.Create()
+                .If(new FixedConditionalNode<GenericContext<int>>(true))
+                    .Then(WorkflowBuilder<GenericContext<int>>.Create()
+                        .If(new FixedConditionalNode<GenericContext<int>>(true))
+                            .Then(new IncrementNode())  // should get called
+                        .Else(new DecrementNode())
+                        .Do(new IncrementNode())  // should get called
+                        .If(new FixedConditionalNode<GenericContext<int>>(false))
+                            .Then(new DecrementNode())
+                        .Else(new IncrementNode()) // should get called
+                        .Build())
+                .Else(new IncrementNode()) // should not get called
+            .Build();
+
+            var context = await workflow.ExecuteAsync(new GenericContext<int>(0));
+
+            Assert.Equal(ExecutionState.Completed, context.State);
+            Assert.Equal(3, context.Data.SampleData);
+        }
+
+        [Fact]
+        public async Task IfWithoutThen_MultipleElseIf_ShouldExecuteNormally()
+        {
+            var workflow = WorkflowBuilder<GenericContext<int>>.Create()
+                .If(new FixedConditionalNode<GenericContext<int>>(false))
+                    .Then(new DecrementNode()) // should not get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(false))
+                    .Then(new DecrementNode()) // should not get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(false))
+                    .Then(new DecrementNode()) // should not get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(true))
+                    .Then(new IncrementNode()) // should get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(true))
+                    .Then(new DecrementNode()) // should not get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(false))
+                    .Then(new DecrementNode()) // should not get called
+                .Else(new DecrementNode()) // should not get called
+            .Build();
+
+            var context = await workflow.ExecuteAsync(new GenericContext<int>(0));
+
+            Assert.Equal(ExecutionState.Completed, context.State);
+            Assert.Equal(1, context.Data.SampleData);
+        }
+
+        [Fact]
+        public async Task IfWithoutThen_MixedSyntax_ShouldExecuteNormally()
+        {
+            var workflow = WorkflowBuilder<GenericContext<int>>.Create()
+                .If(new FixedConditionalNode<GenericContext<int>>(false))
+                    .Then(new DecrementNode()) // should not get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(false), new DecrementNode()) // should not get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(false))
+                    .Then(new DecrementNode()) // should not get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(true), new IncrementNode()) // should get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(true))
+                    .Then(new DecrementNode()) // should not get called
+                .ElseIf(new FixedConditionalNode<GenericContext<int>>(false))
+                    .Then(new DecrementNode()) // should not get called
+                .Else(new DecrementNode()) // should not get called
+            .Build();
+
+            var context = await workflow.ExecuteAsync(new GenericContext<int>(0));
+
+            Assert.Equal(ExecutionState.Completed, context.State);
+            Assert.Equal(1, context.Data.SampleData);
+        }
     }
 }
+

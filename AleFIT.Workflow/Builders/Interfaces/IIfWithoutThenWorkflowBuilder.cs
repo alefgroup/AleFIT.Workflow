@@ -5,8 +5,8 @@ using AleFIT.Workflow.Core;
 
 namespace AleFIT.Workflow.Builders.Interfaces
 {
-    internal interface IWithIfNodeBuilder<T>
+    public interface IIfWithoutThenWorkflowBuilder<T>
     {
-        IWithIfThenNodeBuilder<T> Then(IExecutable<T> actionIfTrue);
+        IConditionalWorkflowBuilder<T> Then(IExecutable<T> actionIfTrue);
     }
 }

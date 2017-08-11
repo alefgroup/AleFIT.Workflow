@@ -11,10 +11,12 @@ using AleFIT.Workflow.Nodes;
 
 namespace AleFIT.Workflow.Builders
 {
-    internal class IfElseNodeBuilder<T> : IWithProcessorIfNodeBuilder<T>, IWithIfNodeBuilder<T>
+    internal class IfElseNodeBuilder<T> : IWithProcessorIfNodeBuilder<T>, IWithIfThenNodeBuilder<T>, IWithIfNodeBuilder<T>
     {
         private readonly IExecutionProcessor<T> _executionProcessor;
         private readonly Queue<IConditionallyExecutable<T>> _conditionalActions = new Queue<IConditionallyExecutable<T>>();
+
+        private IConditional<T> _lastCondition;
 
         private IfElseNodeBuilder(IExecutionProcessor<T> executionProcessor)
         {
@@ -28,7 +30,7 @@ namespace AleFIT.Workflow.Builders
             return new IfElseNodeBuilder<T>(processor);
         }
 
-        public IWithIfNodeBuilder<T> WithIf(IConditional<T> condition, IEnumerable<IExecutable<T>> actionsIfTrue)
+        public IWithIfThenNodeBuilder<T> WithIfThen(IConditional<T> condition, IEnumerable<IExecutable<T>> actionsIfTrue)
         {
             if (condition == null) throw new ArgumentNullException(nameof(condition));
             if (actionsIfTrue == null) throw new ArgumentNullException(nameof(actionsIfTrue));
@@ -38,7 +40,14 @@ namespace AleFIT.Workflow.Builders
             return this;
         }
 
-        public IWithIfNodeBuilder<T> ElseIf(IConditional<T> condition, IExecutable<T> actionIfTrue)
+        public IWithIfNodeBuilder<T> WithIf(IConditional<T> condition)
+        {
+            _lastCondition = condition ?? throw new ArgumentNullException(nameof(condition));
+            return this;
+        }
+
+
+        public IWithIfThenNodeBuilder<T> ElseIf(IConditional<T> condition, IExecutable<T> actionIfTrue)
         {
             _conditionalActions.Enqueue(
                 new ConditionallyExecutableNode<T>(condition, Enumerable.Repeat(actionIfTrue, 1), _executionProcessor));
@@ -46,18 +55,31 @@ namespace AleFIT.Workflow.Builders
             return this;
         }
 
-        public IWithIfNodeBuilder<T> ElseIf(
+        public IWithIfThenNodeBuilder<T> ElseIf(
             IConditional<T> condition, 
             Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
         {
             return ElseIf(condition, new ExecutableNode<T>(actionIfTrue));
         }
 
-        public IWithIfNodeBuilder<T> ElseIf(
+        public IWithIfThenNodeBuilder<T> ElseIf(
             Func<ExecutionContext<T>, Task<bool>> condition, 
             Func<ExecutionContext<T>, Task<ExecutionContext<T>>> actionIfTrue)
         {
             return ElseIf(new ConditionalNode<T>(condition), new ExecutableNode<T>(actionIfTrue));
+        }
+
+        public IWithIfNodeBuilder<T> ElseIf(IConditional<T> condition)
+        {
+            _lastCondition = condition ?? throw new ArgumentNullException(nameof(condition));
+            return this;
+        }
+
+        public IWithIfThenNodeBuilder<T> Then(IExecutable<T> actionIfTrue)
+        {
+            if (actionIfTrue == null) throw new ArgumentNullException(nameof(actionIfTrue));
+
+            return ElseIf(_lastCondition, actionIfTrue);
         }
 
         public IfElseWorkflowNode<T> Else(IEnumerable<IExecutable<T>> elseActions)

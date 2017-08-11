@@ -15,7 +15,9 @@ namespace AleFIT.Workflow.Builders.Interfaces
         IConditionalWorkflowBuilder<T> If(IConditional<T> condition, IExecutable<T> actionIfTrue);
 
         IWorkflowBuilder<T> If(IConditional<T> condition, IExecutable<T> actionIfTrue, IExecutable<T> actionIfFalse);
-        
+
+        IIfWithoutThenWorkflowBuilder<T> If(IConditional<T> condition);
+
         IWorkflowBuilder<T> Pause();
 
         IWorkflowBuilder<T> DoInParallel(IEnumerable<IExecutable<T>> actions);

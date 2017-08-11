@@ -8,6 +8,8 @@ namespace AleFIT.Workflow.Builders.Interfaces
 {
     internal interface IWithProcessorIfNodeBuilder<T>
     {
-        IWithIfNodeBuilder<T> WithIf(IConditional<T> condition, IEnumerable<IExecutable<T>> actionsIfTrue);
+        IWithIfThenNodeBuilder<T> WithIfThen(IConditional<T> condition, IEnumerable<IExecutable<T>> actionsIfTrue);
+
+        IWithIfNodeBuilder<T> WithIf(IConditional<T> condition);
     }
 }
