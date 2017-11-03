@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2005
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AleFIT.Workflow", "AleFIT.Workflow\AleFIT.Workflow.csproj", "{9219B7EF-C5B1-495F-8D7E-C5B5BDD4FDE1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AleFIT.Workflow.Test", "AleFIT.Workflow.Test\AleFIT.Workflow.Test.csproj", "{E260FC0B-7854-4102-A095-DACD45BD4A4F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9219B7EF-C5B1-495F-8D7E-C5B5BDD4FDE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9219B7EF-C5B1-495F-8D7E-C5B5BDD4FDE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9219B7EF-C5B1-495F-8D7E-C5B5BDD4FDE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9219B7EF-C5B1-495F-8D7E-C5B5BDD4FDE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E260FC0B-7854-4102-A095-DACD45BD4A4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E260FC0B-7854-4102-A095-DACD45BD4A4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E260FC0B-7854-4102-A095-DACD45BD4A4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E260FC0B-7854-4102-A095-DACD45BD4A4F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BFBB00E0-E2AE-4C1C-A7FC-2E9AB4CC65C7}
+	EndGlobalSection
+EndGlobal
