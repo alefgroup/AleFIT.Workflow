@@ -50,7 +50,7 @@ namespace AleFIT.Workflow.Executors
         {
             try
             {
-                context = await executable.ExecuteAsync(context);
+                context = await executable.ExecuteAsync(context).ConfigureAwait(false);
             }
             catch (Exception exception)
             {

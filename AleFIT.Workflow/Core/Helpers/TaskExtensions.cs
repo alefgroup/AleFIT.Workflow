@@ -18,7 +18,7 @@ namespace AleFIT.Workflow.Core.Helpers
                     {
                         while (partition.MoveNext())
                         {
-                            await body(partition.Current);
+                            await body(partition.Current).ConfigureAwait(false);
                         }
                     }
                 }));
